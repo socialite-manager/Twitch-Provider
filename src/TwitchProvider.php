@@ -24,7 +24,7 @@ class TwitchProvider extends AbstractProvider
     protected function getAuthUrl(string $state)
     {
         return $this->buildAuthUrlFromBase(
-            'https://api.twitch.tv/kraken/oauth2/authorize', $state
+            'https://id.twitch.tv/oauth2/authorize', $state
         );
     }
 
@@ -33,7 +33,7 @@ class TwitchProvider extends AbstractProvider
      */
     protected function getTokenUrl()
     {
-        return 'https://api.twitch.tv/kraken/oauth2/token';
+        return 'https://id.twitch.tv/oauth2/token';
     }
 
     /**
@@ -42,9 +42,11 @@ class TwitchProvider extends AbstractProvider
     protected function getUserByToken(string $token)
     {
         $response = $this->getHttpClient()->get(
-            'https://api.twitch.tv/kraken/user?oauth_token=' . $token, [
+            'https://api.twitch.tv/helix/users?oauth_token=' . $token, [
             'headers' => [
                 'Accept' => 'application/json',
+				'Authorization' => 'Bearer '.$token,
+                'Client-ID'     => $this->clientId,
             ],
         ]);
         return json_decode($response->getBody()->getContents(), true);
@@ -55,12 +57,13 @@ class TwitchProvider extends AbstractProvider
      */
     protected function mapUserToObject(array $user)
     {
+		$user = $user['data']['0'];
         return (new User())->setRaw($user)->map([
-            'id' => $user['_id'],
+            'id'       => $user['id'],
             'nickname' => $user['display_name'],
-            'name' => $user['name'],
+            'name'     => $user['display_name'],
             'email' => A::get($user, 'email'),
-            'avatar' => $user['logo'],
+            'avatar'   => $user['profile_image_url'],
         ]);
     }
 
